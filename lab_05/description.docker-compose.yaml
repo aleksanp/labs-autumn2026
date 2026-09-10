@@ -1,0 +1,81 @@
+# В данном файле предоставлено описание конфигурационного файла для поднятия сети контейнеров. 
+# Каждая строка сопровождается комментарием исключительно для демонстрационных целей.
+# Основной файл без комментариев - docker-compose.yaml
+
+
+services:  # Начало секции с сервисами
+  
+  postgres:  # Первый контейнер, сервис PostgreSQL базы данных
+    image: postgres:13  # Образ PostgreSQL версии 13, скачивается из DockerHub
+    environment:  # Переменные окружения для контейнера
+      POSTGRES_USER: postgres  # Имя пользователя БД
+      POSTGRES_PASSWORD: postgres  # Пароль пользователя БД
+      POSTGRES_DB: postgres  # Название создаваемой базы данных
+    ports:  # Маппинг портов (хост:контейнер)
+      - "5432:5432"  # Порт 5432 хоста (снаружи) -> порт 5432 контейнера (внутри)
+    healthcheck:  # Проверка работоспособности сервиса
+      test: ["CMD-SHELL", "pg_isready -U postgres"]  # Команда проверки готовности PostgreSQL
+      interval: 5s  # Интервал между проверками
+      timeout: 5s  # Таймаут на выполнение проверки
+      retries: 5  # Количество попыток перед признанием сервиса нерабочим
+
+  liquibase:  # Второй контейнер, сервис Liquibase для миграций БД
+    image: liquibase:4.30.0  # Образ Liquibase версии 4.30.0
+    depends_on:  # Зависимость от другого сервиса, гарантирует порядок запуска контейнеров
+      postgres:  # Зависит от сервиса postgres
+        condition: service_healthy  # Запускать только после того, как postgres пройдёт проверки работоспособности
+    volumes:  # Монтирование томов
+      - ./liquibase_project:/liquibase/changelog  # Локальная папка -> папка в контейнере
+    working_dir: /liquibase/changelog  # Рабочая директория внутри контейнера
+
+  gitlab:  # Третий контейнер, сервис GitLab
+    image: gitlab/gitlab-ce:17.6.0-ce.0  # Образ GitLab Community Edition
+    container_name: gitlab-edu  # Имя контейнера
+    restart: unless-stopped  # Политика перезапуска (кроме случая ручной остановки)
+    hostname: gitlab.local  # Хостнейм внутри сети контейнеров
+
+    environment:  # Переменные окружения
+      GITLAB_OMNIBUS_CONFIG: |  # Конфигурация GitLab Omnibus (многострочная)
+        external_url 'http://gitlab.local'  # Внешний URL для доступа к GitLab
+        
+        gitlab_rails['initial_root_password'] = 'EducationLab!'  # Пароль root-пользователя при первом запуске
+        
+        prometheus_monitoring['enable'] = false  # Отключение мониторинга Prometheus
+        alertmanager['enable'] = false  # Отключение Alertmanager
+        node_exporter['enable'] = false  # Отключение экспортера метрик ноды
+        redis_exporter['enable'] = false  # Отключение экспортера Redis
+        postgres_exporter['enable'] = false  # Отключение экспортера PostgreSQL
+        pgbouncer_exporter['enable'] = false  # Отключение экспортера PgBouncer
+        gitlab_exporter['enable'] = false  # Отключение GitLab exporter
+        
+        gitlab_rails['lfs_enabled'] = false  # Отключение Git LFS
+        puma['worker_processes'] = 2  # Количество worker-процессов Puma
+        sidekiq['max_concurrency'] = 5  # Максимальная конкурентность Sidekiq
+        postgresql['shared_buffers'] = "256MB"  # Размер shared buffers PostgreSQL
+
+    ports:  # Маппинг портов
+      - "8081:80"  # Порт 8081 хоста -> порт 80 контейнера (HTTP)
+      - "2222:22"  # Порт 2222 хоста -> порт 22 контейнера (SSH)
+
+    volumes:  # Постоянные тома для данных GitLab
+      - gitlab_config:/etc/gitlab  # Конфигурация GitLab
+      - gitlab_logs:/var/log/gitlab  # Логи GitLab
+      - gitlab_data:/var/opt/gitlab  # Данные GitLab
+
+    shm_size: '1g'  # Размер shared memory (важно для PostgreSQL внутри GitLab)
+    ulimits:  # Ограничения системы
+      nofile:  # Лимит на количество открытых файлов
+        soft: 65536  # Мягкий лимит
+        hard: 65536  # Жесткий лимит
+
+    healthcheck:  # Проверка работоспособности GitLab
+      test: ["CMD", "curl", "-f", "http://localhost/-/health"]  # HTTP-запрос к health endpoint
+      interval: 30s  # Интервал проверок
+      timeout: 10s  # Таймаут проверки
+      retries: 10  # Количество попыток
+      start_period: 180s  # Время на запуск перед началом проверок
+
+volumes:  # Объявление именованных томов
+  gitlab_config:  # Том для конфигурации
+  gitlab_logs:  # Том для логов
+  gitlab_data:  # Том для данных

@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  liquibase:
+    image: liquibase:4.30.0
+    depends_on:
+      postgres:
+        condition: service_healthy 
+    volumes:
+      - ./liquibase_project:/liquibase/changelog
+    working_dir: /liquibase/changelog
+
+  gitlab:
+    image: gitlab/gitlab-ce:17.6.0-ce.0
+    container_name: gitlab-edu
+    restart: unless-stopped
+    hostname: gitlab.local
+
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        # Обязательно указываем внешний URL (HTTP для локальной сети)
+        external_url 'http://gitlab.local'
+        
+        gitlab_rails['initial_root_password'] = 'EducationLab!'
+        
+        # Отключаем тяжёлые сервисы мониторинга 
+        prometheus_monitoring['enable'] = false
+        alertmanager['enable'] = false
+        node_exporter['enable'] = false
+        redis_exporter['enable'] = false
+        postgres_exporter['enable'] = false
+        pgbouncer_exporter['enable'] = false
+        gitlab_exporter['enable'] = false
+        
+        gitlab_rails['lfs_enabled'] = false
+        puma['worker_processes'] = 2
+        sidekiq['max_concurrency'] = 5
+        postgresql['shared_buffers'] = "256MB"
+
+    ports:
+      - "8081:80"     # Web UI + HTTP API
+      - "2222:22"     # SSH для git clone/push
+
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+
+    shm_size: '1g'    
+    ulimits:          
+      nofile:
+        soft: 65536
+        hard: 65536
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/-/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+
+volumes:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:
