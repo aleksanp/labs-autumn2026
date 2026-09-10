@@ -101,6 +101,14 @@ uv run jupyter notebook --ip=0.0.0.0 --no-browser
 
 Далее откройте в файловом браузере файл с расширением `.ipynb`.
 
+# Полезные ссылки
+1) Учебник по машинному обучению, https://education.yandex.ru/handbook/ml/article/mashinnoye-obucheniye
+2) Курс "Машинное обучение" на ФКН ВШЭ, https://github.com/esokolov/ml-course-hse
+http://wiki.cs.hse.ru/Машинное_обучение_1, 
+http://wiki.cs.hse.ru/Машинное_обучение_2
+3) Машинное обучение (курс лекций, К.В.Воронцов), http://www.machinelearning.ru/wiki/index.php?title=Машинное_обучение_(курс_лекций%2C_К.В.Воронцов)
+4) Машинное и глубокое обучение, онлайн-учебник, В. В. Китов, https://deepmachinelearning.ru/
+
 
 
 
