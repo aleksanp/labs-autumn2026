@@ -18,8 +18,8 @@ venv/
 .idea
 .vscode
 
-*.old
-*.teacher
+.old
+.teacher
 *.zip
 *.png
 *.joblib
