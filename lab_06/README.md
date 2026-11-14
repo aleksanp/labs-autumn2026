@@ -19,14 +19,6 @@
   - развёрнут GitLab CE (`http://localhost:8081`, логин `root`, пароль `EducationLab!`).
   - Установлен Docker
 
-
-## Ограничение ресурсов (важно)
-
-Airflow и GitLab — самые «тяжёлые» сервисы курса: вместе занимают ~6–7 ГБ RAM.
-В WSL2 память ограничена — следите за свободной памятью (`free -h`). Если не
-хватает, GitLab можно временно остановить (`cd ~/labs/lab_05 && docker compose stop`):
-он нужен только в момент создания проекта и `git push`.
-
 ## Подготовка
 
 ### 1. Поднимаем GitLab (из лабы № 5)
@@ -39,8 +31,12 @@ docker compose up gitlab -d
 
 Ждём 1–2 минуты. Заходим на `http://localhost:8081` (`root` / `EducationLab!`)
 и создаём новый пустой проект **`mlops-logistics-lab06`**:
-*Create new project* → Pick a group or namespace: `root` → снимаем галку
-*Project Configuration* (без README и остальных файлов) → *Create project*.
+*Create new project* → Pick a group or namespace: `root` → снимаем галку *Project Configuration* (без README и остальных файлов) → *Create project*.
+
+> Ограничение ресурсов (важно)
+
+Airflow и GitLab — самые «тяжёлые» сервисы курса: вместе занимают ~6–7 ГБ RAM.
+В WSL2 память ограничена — следите за свободной памятью (`free -h`). Если не хватает, GitLab можно временно остановить (`cd ~/labs/lab_05 && docker compose stop`), он нужен только в момент создания проекта и `git push`.
 
 ### 2. Создаём файл `.env`
 
